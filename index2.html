@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄羅斯方塊 - 全方位旋轉版</title>
+    <style>
+        /* 現有的CSS樣式保持不變 */
+        
+        .rotation-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .rotation-controls button {
+            background-color: #9C27B0;
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .rotation-controls button:hover {
+            background-color: #7B1FA2;
+        }
+        
+        #rotateNorth { grid-column: 1 / span 2; }
+        #rotateEast { grid-column: 2; }
+        #rotateSouth { grid-column: 1 / span 2; }
+        #rotateWest { grid-column: 1; }
+    </style>
+</head>
+<body>
+    <!-- 現有的HTML結構保持不變 -->
+    
+    <!-- 在控制按鈕區域添加旋轉控制 -->
+    <div class="rotation-controls">
+        <button id="rotateNorth">北 ↑ (按鍵1)</button>
+        <button id="rotateEast">東 → (按鍵2)</button>
+        <button id="rotateSouth">南 ↓ (按鍵3)</button>
+        <button id="rotateWest">西 ← (按鍵4)</button>
+    </div>
+    
+    <!-- 更新遊戲說明 -->
+    <div class="info-box instructions">
+        <h3>遊戲控制</h3>
+        <ul>
+            <li><span class="key">← →</span> 左右移動方塊</li>
+            <li><span class="key">↑</span> 順時針旋轉方塊</li>
+            <li><span class="key">Z</span> 逆時針旋轉方塊</li>
+            <li><span class="key">1-4</span> 直接旋轉到北/東/南/西方向</li>
+            <li><span class="key">↓</span> 加速下落</li>
+            <li><span class="key">Space</span> 直接落下</li>
+            <li><span class="key">P</span> 暫停/繼續遊戲</li>
+        </ul>
+    </div>
+
+    <script>
+        // 現有的遊戲變數和初始化程式碼
+        
+        // 新增旋轉狀態
+        let rotationState = 0;
+        
+        // 新增旋轉函數
+        function rotatePiece(direction = 'clockwise') {
+            if (!currentPiece || !gameRunning || gameOver) return;
+            
+            const originalPiece = currentPiece;
+            const originalState = rotationState;
+            
+            if (direction === 'clockwise') {
+                rotationState = (rotationState + 1) % 4;
+                rotateMatrixClockwise();
+            } else if (direction === 'counterclockwise') {
+                rotationState = (rotationState + 3) % 4;
+                rotateMatrixCounterClockwise();
+            } else if (direction === 'north') {
+                while (rotationState !== 0) {
+                    rotationState = (rotationState + 1) % 4;
+                    rotateMatrixClockwise();
+                }
+            } else if (direction === 'east') {
+                while (rotationState !== 1) {
+                    rotationState = (rotationState + 1) % 4;
+                    rotateMatrixClockwise();
+                }
+            } else if (direction === 'south') {
+                while (rotationState !== 2) {
+                    rotationState = (rotationState + 1) % 4;
+                    rotateMatrixClockwise();
+                }
+            } else if (direction === 'west') {
+                while (rotationState !== 3) {
+                    rotationState = (rotationState + 1) % 4;
+                    rotateMatrixClockwise();
+                }
+            }
+            
+            // 檢查旋轉後是否碰撞
+            if (checkCollision()) {
+                // 如果碰撞，恢復原狀
+                currentPiece = originalPiece;
+                rotationState = originalState;
+            }
+            
+            draw();
+        }
+        
+        function rotateMatrixClockwise() {
+            if (!currentPiece) return;
+            
+            const rows = currentPiece.length;
+            const cols = currentPiece[0].length;
+            const rotated = [];
+            
+            for (let c = 0; c < cols; c++) {
+                rotated[c] = [];
+                for (let r = rows - 1; r >= 0; r--) {
+                    rotated[c][rows - 1 - r] = currentPiece[r][c];
+                }
+            }
+            
+            currentPiece = rotated;
+        }
+        
+        function rotateMatrixCounterClockwise() {
+            if (!currentPiece) return;
+            
+            const rows = currentPiece.length;
+            const cols = currentPiece[0].length;
+            const rotated = [];
+            
+            for (let c = cols - 1; c >= 0; c--) {
+                rotated[cols - 1 - c] = [];
+                for (let r = 0; r < rows; r++) {
+                    rotated[cols - 1 - c][r] = currentPiece[r][c];
+                }
+            }
+            
+            currentPiece = rotated;
+        }
+        
+        // 更新鍵盤控制
+        document.addEventListener('keydown', (e) => {
+            if (!gameRunning || gameOver) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    movePiece(0, -1);
+                    break;
+                case 'ArrowRight':
+                    movePiece(0, 1);
+                    break;
+                case 'ArrowDown':
+                    movePiece(1, 0);
+                    break;
+                case 'ArrowUp':
+                    rotatePiece('clockwise');
+                    break;
+                case ' ':
+                    dropPiece();
+                    break;
+                case 'p':
+                case 'P':
+                    pauseGame();
+                    break;
+                case 'z':
+                case 'Z':
+                    rotatePiece('counterclockwise');
+                    break;
+                case '1':
+                    rotatePiece('north');
+                    break;
+                case '2':
+                    rotatePiece('east');
+                    break;
+                case '3':
+                    rotatePiece('south');
+                    break;
+                case '4':
+                    rotatePiece('west');
+                    break;
+            }
+            
+            draw();
+        });
+        
+        // 新增按鈕事件監聽
+        document.getElementById('rotateNorth').addEventListener('click', () => rotatePiece('north'));
+        document.getElementById('rotateEast').addEventListener('click', () => rotatePiece('east'));
+        document.getElementById('rotateSouth').addEventListener('click', () => rotatePiece('south'));
+        document.getElementById('rotateWest').addEventListener('click', () => rotatePiece('west'));
+        
+        // 在創建新方塊時重置旋轉狀態
+        function createPiece() {
+            // 重置旋轉狀態
+            rotationState = 0;
+            // 其他現有程式碼...
+        }
+    </script>
+</body>
+</html>
